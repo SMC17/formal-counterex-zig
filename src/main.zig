@@ -32,64 +32,57 @@ pub fn isRefuted(name: []const u8) ?[]const u8 {
 }
 
 pub fn isConfirmed(name: []const u8) bool {
-    var iter = std.mem.splitAny(u8, manifest_json, "\n");
-    while (iter.next()) |line| {
-        if (std.mem.indexOf(u8, line, name) != null and
-            std.mem.indexOf(u8, line, "true") != null and
-            std.mem.indexOf(u8, line, "_") == null) return true;
-    }
-    return false;
+    // A confirmed claim is a manifest line of the form `"<name>": true`.
+    // Meta objects (_meta, _refuted) carry string values, never `true`.
+    var buf: [256]u8 = undefined;
+    const needle = std.fmt.bufPrint(&buf, "\"{s}\": true", .{name}) catch return false;
+    return std.mem.indexOf(u8, manifest_json, needle) != null;
 }
 
-fn printRefuted(stdout: std.fs.File) !void {
-    const w = stdout.deprecatedWriter();
-    try w.print("\n=== Formally Refuted Claims ({d}) ===\n\n", .{refutations.len});
+fn printRefuted() void {
+    std.debug.print("\n=== Formally Refuted Claims ({d}) ===\n\n", .{refutations.len});
     for (refutations, 1..) |r, i| {
-        try w.print("{d}. {s}\n   {s}\n\n", .{ i, r.claim, r.reason });
+        std.debug.print("{d}. {s}\n   {s}\n\n", .{ i, r.claim, r.reason });
     }
-    try w.print("Source: Lean 4 / Aristotle (2026-06-27 through 2026-07-01)\n\n", .{});
+    std.debug.print("Source: Lean 4 / Mathlib (2026-06-27 through 2026-07-01)\n\n", .{});
 }
 
-fn checkClaim(stdout: std.fs.File, name: []const u8) !void {
-    const w = stdout.deprecatedWriter();
+fn checkClaim(name: []const u8) void {
     if (isRefuted(name)) |reason| {
-        try w.print("REFUTED: {s}\n{s}\n", .{ name, reason });
+        std.debug.print("REFUTED: {s}\n{s}\n", .{ name, reason });
         return;
     }
     if (isConfirmed(name)) {
-        try w.print("CONFIRMED: {s}\n  Formally proved in QuantLib (Lean 4 / Mathlib).\n", .{name});
+        std.debug.print("CONFIRMED: {s}\n  Formally proved in Lean 4 / Mathlib.\n", .{name});
         return;
     }
-    try w.print("UNKNOWN/PENDING: {s}\n  Not confirmed in proof_manifest.json.\n", .{name});
+    std.debug.print("UNKNOWN/PENDING: {s}\n  Not confirmed in proof_manifest.json.\n", .{name});
 }
 
-pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    defer _ = gpa.deinit();
-    const allocator = gpa.allocator();
-    const args = try std.process.argsAlloc(allocator);
-    defer std.process.argsFree(allocator, args);
+pub fn main(init: std.process.Init) !void {
+    var iter = try std.process.Args.Iterator.initAllocator(init.minimal.args, init.gpa);
+    defer iter.deinit();
+    _ = iter.next(); // program name
 
-    const stdout = std.fs.File{ .handle = std.os.linux.STDOUT_FILENO };
-
-    if (args.len < 2) {
-        const w = stdout.deprecatedWriter();
-        try w.print(
+    const cmd = iter.next() orelse {
+        std.debug.print(
             "formal-counterex — formally verified refutation database\n\n" ++
             "Commands:\n" ++
             "  list-refuted         Show all 7 formally refuted claims\n" ++
             "  check <claim>        Check claim status in manifest\n", .{});
         return;
-    }
+    };
 
-    const cmd = args[1];
     if (std.mem.eql(u8, cmd, "list-refuted")) {
-        try printRefuted(stdout);
-    } else if (std.mem.eql(u8, cmd, "check") and args.len >= 3) {
-        try checkClaim(stdout, args[2]);
+        printRefuted();
+    } else if (std.mem.eql(u8, cmd, "check")) {
+        if (iter.next()) |claim| {
+            checkClaim(claim);
+        } else {
+            std.debug.print("Usage: check <claim>\n", .{});
+        }
     } else {
-        const w = stdout.deprecatedWriter();
-        try w.print("Unknown command: {s}\n", .{cmd});
+        std.debug.print("Unknown command: {s}\n", .{cmd});
     }
 }
 
