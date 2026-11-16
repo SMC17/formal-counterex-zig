@@ -1,0 +1,14 @@
+# formal-counterex-zig (`SMC17/formal-counterex-zig`)
+
+> Zig 0.16 CLI over a Lean 4 / Mathlib database of formally refuted and confirmed quantitative-finance claims.
+
+## Key Links
+- **Repository**: https://github.com/SMC17/formal-counterex-zig
+- **Related (`zig-substrate`)**: https://github.com/SMC17/zinging
+- **Author / Org**: https://github.com/SMC17
+
+## Build & Run
+- `zig build && zig build test`
+- `./zig-out/bin/formal-counterex list-refuted`
+- `./zig-out/bin/formal-counterex check es_is_coherent`
+- [README](README.md) · [Build](build.zig) · [Source](src)
