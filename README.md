@@ -1,5 +1,7 @@
 # formal-counterex
 
+**[Status](STATUS.md) · [Roadmap](ROADMAP.md) · [Contributing](CONTRIBUTING.md) · [Issues](https://github.com/SMC17/formal-counterex-zig/issues) · [Public roadmap](https://github.com/users/SMC17/projects/16)**
+
 A small CLI over a machine-checked database of quantitative-finance claims that
 were either **refuted by a formal counterexample** or **confirmed by a formal
 proof** in Lean 4 / Mathlib. Discipline over folklore: each verdict is settled
